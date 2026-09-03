@@ -31,6 +31,7 @@ Key defaults:
 
 ### Milestone 1 — Buildable Project Foundation
 
+- **Status:** ✅ Complete
 - **Goal:** Establish the smallest executable Go application without implementing blockchain behavior.
 - **What will be implemented:** A `cmd/gochain` entry point, a testable `run` dispatcher, help/usage output, unknown-command handling, and an ignore rule for `gochain.db` and local binaries.
 - **Blockchain / Go concepts being learned:** Go module layout, `main` packages, argument handling, error-to-exit-code boundaries, and keeping executable wiring separate from domain code.
@@ -42,6 +43,7 @@ Key defaults:
 
 ### Milestone 2 — Transaction Values and Block Structure
 
+- **Status:** ✅ Complete
 - **Goal:** Define the data that participates in a blockchain block.
 - **What will be implemented:** `transaction.Type`, `transaction.Transaction`, and `blockchain.Block` with the exact fields from `SPEC.md`.
 - **Blockchain / Go concepts being learned:** Transactions as immutable values, ordered block contents, integer currency, named string types, structs, and package dependencies.
