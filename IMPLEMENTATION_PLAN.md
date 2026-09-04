@@ -55,6 +55,7 @@ Key defaults:
 
 ### Milestone 3 — Deterministic SHA-256 Hashing
 
+- **Status:** ✅ Complete
 - **Goal:** Make block contents produce a reproducible cryptographic fingerprint.
 - **What will be implemented:** `Block.CalculateHash` using SHA-256, lowercase hexadecimal output, and a dedicated JSON hash-payload struct.
 - **Blockchain / Go concepts being learned:** Hash functions, deterministic serialization, byte slices, JSON encoding, and method receivers.
