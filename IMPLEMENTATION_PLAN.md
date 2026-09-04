@@ -79,6 +79,7 @@ Key defaults:
 
 ### Milestone 5 — In-Memory Blockchain Structure
 
+- **Status:** ✅ Complete
 - **Goal:** Represent an ordered chain and expose its tip safely.
 - **What will be implemented:** `blockchain.Blockchain`, construction from Genesis, tip access, next height, and fixed chain difficulty lookup.
 - **Blockchain / Go concepts being learned:** Ordered history, slices, value versus pointer semantics, and explicit error handling for an empty chain.
