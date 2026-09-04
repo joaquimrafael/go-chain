@@ -67,6 +67,7 @@ Key defaults:
 
 ### Milestone 4 — Genesis Block
 
+- **Status:** ✅ Complete
 - **Goal:** Create the deterministic starting point of every GoChain.
 - **What will be implemented:** Genesis constants and `NewGenesisBlock(timestamp, difficulty)`.
 - **Blockchain / Go concepts being learned:** Chain roots, protocol constants, constructors, validation of input ranges, and deterministic fixtures.
