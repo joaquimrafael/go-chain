@@ -91,6 +91,7 @@ Key defaults:
 
 ### Milestone 6 — Structural Chain Validation
 
+- **Status:** ✅ Complete
 - **Goal:** Detect corruption in the cryptographic and linking structure before economic rules exist.
 - **What will be implemented:** `ValidateStructure`, replaying from Genesis and returning the first block-specific error.
 - **Blockchain / Go concepts being learned:** Invariants, sequential validation, fail-fast errors, hash recalculation, and leading-zero checks.
@@ -324,11 +325,11 @@ Important cross-dependencies:
 
 ## Recommended Next Implementation Task
 
-Implement **Milestone 1 — Buildable Project Foundation only**.
+Implement **Milestone 7 — SQLite Schema, Initialization, and Chain Reload only**.
 
 Before writing its code:
 
-1. Explain Milestone 1’s purpose, Go concepts, and expected file changes.
-2. Implement only the buildable CLI shell.
-3. Run `gofmt`, focused tests, `go test ./...`, and the build command.
+1. Explain Milestone 7’s purpose, Go concepts, and expected file changes.
+2. Implement only the SQLite store, schema, initialization, and chain reload.
+3. Run `gofmt`, focused persistence tests, and `go test ./...`.
 4. Explain the resulting code and stop for review and commit.
