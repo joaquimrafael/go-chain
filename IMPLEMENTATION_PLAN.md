@@ -40,6 +40,7 @@ Key defaults:
 - **Tests to add or run:** Test help and unknown-command behavior; run `go test ./...` and `go build -o /tmp/gochain ./cmd/gochain`.
 - **Completion criteria:** The binary builds, prints useful usage, rejects unknown commands clearly, and contains no blockchain logic.
 - **What I should be able to explain after completing the milestone:** How a Go CLI starts, how arguments reach application code, and why a small `run` function improves testability.
+- **Implementation notes:** Added `cmd/gochain/main.go` and `run.go`. `main` passes arguments and output streams to `run`, then forwards its return value to `os.Exit`. The dispatcher accepts `help`, `-h`, and `--help`; missing or unknown commands print usage to stderr and return exit code 1. Injected `io.Writer` values let tests check output without launching a process. `.gitignore` excludes the root binary and `gochain.db`. This milestone uses only the standard library; blockchain commands remain deferred.
 
 ### Milestone 2 — Transaction Values and Block Structure
 
@@ -52,6 +53,7 @@ Key defaults:
 - **Tests to add or run:** Do not test plain struct field assignments; run compilation and `go test ./...`.
 - **Completion criteria:** The exact block and transaction models compile without behavior or speculative fields.
 - **What I should be able to explain after completing the milestone:** What every block and transaction field means and why transaction order must be preserved.
+- **Implementation notes:** Added the named string type `transaction.Type`, its `Transfer` and `Reward` constants, and `transaction.Transaction` with `Type`, `From`, `To`, and `Amount`. Added `blockchain.Block` with height, timestamp, previous hash, stored hash, nonce, difficulty, and an ordered transaction slice. Amounts and heights use `int64`; nonces use `uint64`. The blockchain package depends on the transaction package. These are plain Go values without database IDs or validation behavior; their exported fields and slices do not enforce immutability.
 
 ### Milestone 3 — Deterministic SHA-256 Hashing
 
@@ -64,6 +66,7 @@ Key defaults:
 - **Tests to add or run:** Same data gives the same hash; changing nonce, previous hash, transaction data, or transaction order changes it; changing only stored `Hash` does not.
 - **Completion criteria:** Hashing is deterministic and every specified field affects the result correctly.
 - **What I should be able to explain after completing the milestone:** Why deterministic serialization matters and why a block cannot hash its own stored hash.
+- **Implementation notes:** Added the value-receiver method `Block.CalculateHash` and an unexported `hashPayload` struct in `internal/blockchain/block.go`. The method serializes height, timestamp, previous hash, nonce, difficulty, and ordered transactions with `encoding/json`, hashes the bytes with `sha256.Sum256`, and returns lowercase hexadecimal using `hex.EncodeToString`. The stored `Hash` is excluded, and calculating a hash does not update the block. Tests check a deterministic SHA-256 result, changes to every payload field and transaction order, and independence from the stored hash.
 
 ### Milestone 4 — Genesis Block
 
@@ -76,6 +79,7 @@ Key defaults:
 - **Tests to add or run:** Verify all Genesis fields, empty transactions, deterministic hash, and difficulty bounds.
 - **Completion criteria:** Given the same timestamp and difficulty, Genesis is reproduced exactly.
 - **What I should be able to explain after completing the milestone:** Why Genesis is special and which normal block rules do and do not apply to it.
+- **Implementation notes:** Added Genesis and difficulty constants plus `NewGenesisBlock(timestamp, difficulty)` in `internal/blockchain/genesis.go`. The constructor rejects difficulty outside 1–64, uses height and nonce 0, sets the previous hash to 64 zeroes, allocates a non-nil empty transaction slice, and calculates the stored hash without mining. The supplied timestamp makes construction deterministic. Genesis issues no reward. Tests check its fields, a fixed expected hash, repeatability, and both valid and invalid difficulty boundaries.
 
 ### Milestone 5 — In-Memory Blockchain Structure
 
@@ -88,6 +92,7 @@ Key defaults:
 - **Tests to add or run:** New chain contains Genesis; tip and next height are correct; empty-chain access returns a clear error.
 - **Completion criteria:** Later hashing, validation, balance, and mining code can consume one simple ordered structure.
 - **What I should be able to explain after completing the milestone:** How block order, height, previous hash, and the current tip relate.
+- **Implementation notes:** Added `Blockchain` with a `Blocks []Block` field and `NewBlockchain(genesis)` in `internal/blockchain/chain.go`. `Tip` reads the final block, `NextHeight` adds one to the tip's height, and `Difficulty` reads Genesis so the chain's configured difficulty does not depend on later blocks. All three accessors return `ErrEmptyBlockchain` when the slice is empty. Construction and access do not validate the chain or deep-copy transaction slices; callers retain responsibility for validation and mutation. Tests cover Genesis construction, tip and height lookup, Genesis-based difficulty, and empty-chain errors.
 
 ### Milestone 6 — Structural Chain Validation
 
@@ -100,6 +105,7 @@ Key defaults:
 - **Tests to add or run:** Valid structure; malformed Genesis; altered height, link, hash, nonce, or difficulty; error identifies the first invalid block and rule.
 - **Completion criteria:** Every structural invariant available at this stage is enforced with readable errors.
 - **What I should be able to explain after completing the milestone:** How tampering propagates through hashes and links, and why validation starts at Genesis.
+- **Implementation notes:** Added `ValidateStructure(chain)` in `internal/blockchain/validation.go`. It walks blocks from Genesis, checking sequential heights, difficulty bounds and agreement with Genesis, the Genesis previous hash and empty transactions, later block links, recalculated hashes, and non-Genesis leading-zero Proof of Work. Errors identify the slice position rather than trusting a possibly corrupted stored height, and validation stops at the first failure. Tests use deterministic difficulty-1 fixtures and cover corruption and error ordering. The fixture nonce search is test setup only; cancellable mining and economic validation remain deferred to Milestones 12 and 13.
 
 ### Milestone 7 — SQLite Schema, Initialization, and Chain Reload
 
