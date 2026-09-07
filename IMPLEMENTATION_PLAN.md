@@ -103,6 +103,7 @@ Key defaults:
 
 ### Milestone 7 — SQLite Schema, Initialization, and Chain Reload
 
+- **Status:** ✅ Complete
 - **Goal:** Persist Genesis and reconstruct the same chain after process restart.
 - **What will be implemented:** Concrete `storage.Store`, schema creation, initialization, Genesis persistence, full chain loading, and connection closing.
 - **Blockchain / Go concepts being learned:** `database/sql`, SQLite transactions, relational representation of ordered blockchain data, resource cleanup, and restart persistence.
@@ -111,6 +112,8 @@ Key defaults:
 - **Tests to add or run:** Fresh initialization, persisted Genesis, second-init rejection, close/reopen behavior, and chain reconstruction from a temporary database.
 - **Completion criteria:** A fresh database initializes once and reloads an identical Genesis chain after reopening.
 - **What I should be able to explain after completing the milestone:** How blocks and ordered transactions map to relational rows and why SQLite is the persistent source of truth.
+- **Implementation notes:** Added `storage.Open(ctx, path)`, `Store.Close`, `Store.Initialize(ctx, timestamp, difficulty)`, and `Store.LoadChain(ctx)`. Schema creation and Genesis insertion commit together; chain loading uses one SQL snapshot and preserves stored hashes, block heights, transaction positions, and empty Genesis transactions. Nonces use decimal `TEXT` to preserve the complete `uint64` range. Pending IDs use `AUTOINCREMENT` so a deleted ID cannot later identify a different pending transfer. No scope deviations; account operations, pending operations, mined-block confirmation, and CLI wiring remain deferred.
+- **Verification:** `gofmt -w internal/storage/sqlite.go internal/storage/blocks.go internal/storage/sqlite_test.go`, `go test ./internal/storage`, `go test ./...`, `go vet ./...`, and `git diff --check` passed. `go get modernc.org/sqlite@v1.56.0` and `go mod tidy` resolved the pinned driver. Dependency tidying and full checks required build-cache access beyond the sandbox. Tests cover fresh initialization, all four tables, identical Genesis after reopen, repeated-init rejection, invalid difficulty, cancelled initialization, schema rollback on Genesis failure, ordered multi-block reload, maximum nonce, corrupt-hash preservation, and malformed nonce errors.
 
 ### Milestone 8 — Persistent Accounts
 
@@ -325,11 +328,11 @@ Important cross-dependencies:
 
 ## Recommended Next Implementation Task
 
-Implement **Milestone 7 — SQLite Schema, Initialization, and Chain Reload only**.
+Implement **Milestone 8 — Persistent Accounts only**.
 
 Before writing its code:
 
-1. Explain Milestone 7’s purpose, Go concepts, and expected file changes.
-2. Implement only the SQLite store, schema, initialization, and chain reload.
-3. Run `gofmt`, focused persistence tests, and `go test ./...`.
+1. Explain Milestone 8’s purpose, Go concepts, and expected file changes.
+2. Implement only account-name normalization, creation, uniqueness, existence checks, and account-name set loading.
+3. Run `gofmt`, focused account persistence tests, and `go test ./...`.
 4. Explain the resulting code and stop for review and commit.
