@@ -151,6 +151,7 @@ Key defaults:
 
 ### Milestone 10 — Transfer and Available-Funds Validation
 
+- **Status:** ✅ Complete
 - **Goal:** Decide whether a new transfer may enter the pending pool.
 - **What will be implemented:** Transfer validation using account names, confirmed balances, and the existing ordered pending transfers.
 - **Blockchain / Go concepts being learned:** Separating confirmed from available state, pure validation functions, table-driven tests, and explicit business rules.
@@ -159,6 +160,8 @@ Key defaults:
 - **Tests to add or run:** Missing sender/receiver, same account, zero/negative amount, exact spend, overspend, cumulative pending overspend, and attempted spending of pending incoming funds.
 - **Completion criteria:** Every transfer rule in `SPEC.md` is enforced without accessing SQLite directly.
 - **What I should be able to explain after completing the milestone:** The difference between confirmed balance and currently available funds.
+- **Implementation notes:** Added the pure `transaction.ValidateTransfer(transfer, accounts, confirmed, pending)` function in `internal/transaction/validation.go`. It requires a transfer type, existing and different sender/receiver names, a positive amount, and sufficient available funds. Names are matched exactly and must already be normalized by the caller. Available funds start at the sender's confirmed balance and decrease for each pending outgoing transfer; pending incoming funds and future rewards never increase them. Checking before each subtraction prevents cumulative pending amounts from overflowing `int64`. The function rejects negative sender balances and malformed pending transfer fields, reporting zero-based pending positions; pending funding is checked only for the candidate's sender. It neither mutates inputs nor accesses SQLite. Pending storage, CLI wiring, and complete chain validation remain deferred; no dependencies or schema changes were needed.
+- **Verification:** `gofmt -w internal/transaction/validation.go internal/transaction/validation_test.go`, `go test ./internal/transaction -count=1`, `go test ./...`, `go vet ./...`, and `git diff --check` passed. Full tests and vet required build-cache access beyond the sandbox. Table-driven tests cover valid and exact spending, missing accounts, case-sensitive names, same-account transfers, zero/negative amounts, unknown/reward types, unfunded senders, cumulative pending spending, pending incoming funds, unrelated outgoing transfers, already-overspent pending funds, malformed pending entries, negative confirmed balances, `int64` limits, and unchanged inputs.
 
 ### Milestone 11 — Persistent Pending Transaction Pool
 
@@ -340,11 +343,11 @@ Important cross-dependencies:
 
 ## Recommended Next Implementation Task
 
-Implement **Milestone 10 — Transfer and Available-Funds Validation only**.
+Implement **Milestone 11 — Persistent Pending Transaction Pool only**.
 
 Before writing its code:
 
-1. Explain Milestone 10’s purpose, Go concepts, and expected file changes.
-2. Implement only transfer validation using account names, confirmed balances, and existing pending outgoing transfers; pending incoming transfers are not spendable.
-3. Run `gofmt`, focused transfer validation tests, and `go test ./...`.
+1. Explain Milestone 11’s purpose, Go concepts, and expected file changes.
+2. Implement only pending-transaction metadata, transfer insertion, ordered loading, and restart persistence; rewards must not enter the pending pool.
+3. Run `gofmt`, focused pending persistence tests, and `go test ./...`.
 4. Explain the resulting code and stop for review and commit.
