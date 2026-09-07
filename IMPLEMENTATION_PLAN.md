@@ -165,6 +165,7 @@ Key defaults:
 
 ### Milestone 11 — Persistent Pending Transaction Pool
 
+- **Status:** ✅ Complete
 - **Goal:** Make unconfirmed transfers survive separate CLI executions.
 - **What will be implemented:** `storage.PendingTransaction`, insertion, ordered loading, and restart persistence.
 - **Blockchain / Go concepts being learned:** The mempool concept, persistence metadata, database-generated IDs, and conversion between storage and domain values.
@@ -173,6 +174,8 @@ Key defaults:
 - **Tests to add or run:** Insert/load, stable order, close/reopen persistence, and rejection of attempts to store reward transactions as pending.
 - **Completion criteria:** Pending transfers reload unchanged and in a deterministic order.
 - **What I should be able to explain after completing the milestone:** Why a CLI blockchain needs a persistent mempool and why its database ID is not blockchain data.
+- **Implementation notes:** Added `storage.PendingTransaction`, `Store.AddPending(ctx, transfer, timestamp)`, and `Store.LoadPending(ctx)` in `internal/storage/pending.go`. Each entry carries a generated `int64` ID, a Unix `CreatedAt` timestamp, and a separate `transaction.Transaction` value. Parameterized insertion preserves transaction fields and returns the assigned ID; loading uses ascending ID order and restores the transfer type implicit in the pending table. Identical transfers remain distinct rows, and timestamps do not determine queue order. Empty pools return a non-nil empty slice. Insertion rejects rewards and unknown types; callers must use `transaction.ValidateTransfer` for account, amount, and available-funds checks before insertion. Storage metadata stays outside block transaction data and hashing. No schema changes or dependencies were needed; mining, pending removal during atomic confirmation, and CLI wiring remain deferred.
+- **Verification:** `gofmt -w internal/storage/pending.go internal/storage/pending_test.go`, `go test ./internal/storage -run TestPending -count=1`, `go test ./...`, `go vet ./...`, and `git diff --check` passed. Full tests and vet ran with build-cache access beyond the sandbox. Tests cover empty pools, insertion results, generated IDs, stable ordering despite out-of-order timestamps, names containing quotes, duplicate transfer values with distinct IDs, close/reopen persistence, further insertion after reopening, unchanged confirmed history, non-transfer rejection, pre-cancelled operations, and forced SQLite insertion failure preserving existing pending rows.
 
 ### Milestone 12 — Proof of Work with Context Cancellation
 
@@ -343,11 +346,11 @@ Important cross-dependencies:
 
 ## Recommended Next Implementation Task
 
-Implement **Milestone 11 — Persistent Pending Transaction Pool only**.
+Implement **Milestone 12 — Proof of Work with Context Cancellation only**.
 
 Before writing its code:
 
-1. Explain Milestone 11’s purpose, Go concepts, and expected file changes.
-2. Implement only pending-transaction metadata, transfer insertion, ordered loading, and restart persistence; rewards must not enter the pending pool.
-3. Run `gofmt`, focused pending persistence tests, and `go test ./...`.
+1. Explain Milestone 12’s purpose, Go concepts, and expected file changes.
+2. Implement only difficulty checking and sequential Proof of Work with context cancellation; update the candidate nonce and hash only on success.
+3. Run `gofmt`, focused Proof-of-Work and cancellation tests, and `go test ./...`.
 4. Explain the resulting code and stop for review and commit.
