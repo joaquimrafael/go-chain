@@ -117,6 +117,7 @@ Key defaults:
 
 ### Milestone 8 — Persistent Accounts
 
+- **Status:** ✅ Complete
 - **Goal:** Introduce the human-readable identities used by transactions and rewards.
 - **What will be implemented:** Account-name normalization, creation, uniqueness enforcement, existence checks, and loading the current account-name set.
 - **Blockchain / Go concepts being learned:** Domain validation, unique constraints, parameterized SQL, sentinel errors, and simple set representation in Go.
@@ -125,6 +126,8 @@ Key defaults:
 - **Tests to add or run:** Create/reload accounts; reject blank and duplicate names; confirm `alice` and `Alice` are distinct.
 - **Completion criteria:** Accounts survive restart and can be queried reliably by later transaction and validation code.
 - **What I should be able to explain after completing the milestone:** Why accounts are identifiers only and why their balances are not stored alongside them.
+- **Implementation notes:** Added `NormalizeAccountName`, `Store.CreateAccount(ctx, name, timestamp)`, `Store.AccountExists(ctx, name)`, and `Store.LoadAccountNames(ctx)` in `internal/storage/accounts.go`. Creation returns the normalized name; creation and lookup reject blank names and preserve case and internal whitespace. Parameterized SQL and the existing primary key enforce uniqueness without a separate existence check. Duplicate creation returns `ErrAccountAlreadyExists` without overwriting the original timestamp; blank input returns `ErrInvalidAccountName`. The name set uses `map[string]struct{}`. Store operations require an initialized database. No schema changes, new dependencies, or scope deviations; CLI wiring and balances remain deferred.
+- **Verification:** `gofmt -w internal/storage/accounts.go internal/storage/accounts_test.go`, `go test ./internal/storage -run TestAccounts -count=1`, `go test ./...`, `go vet ./...`, and `git diff --check` passed. Full tests and vet required build-cache access beyond the sandbox. Tests cover empty sets, normalization including Unicode whitespace, distinct case-sensitive names, names containing quotes, close/reopen persistence, existence and missing-name checks, duplicate rejection without timestamp replacement, blank-name rejection, and context cancellation without account creation.
 
 ### Milestone 9 — Confirmed Balance Reconstruction
 
@@ -328,11 +331,11 @@ Important cross-dependencies:
 
 ## Recommended Next Implementation Task
 
-Implement **Milestone 8 — Persistent Accounts only**.
+Implement **Milestone 9 — Confirmed Balance Reconstruction only**.
 
 Before writing its code:
 
-1. Explain Milestone 8’s purpose, Go concepts, and expected file changes.
-2. Implement only account-name normalization, creation, uniqueness, existence checks, and account-name set loading.
-3. Run `gofmt`, focused account persistence tests, and `go test ./...`.
+1. Explain Milestone 9’s purpose, Go concepts, and expected file changes.
+2. Implement only ordered confirmed-transaction replay and per-account confirmed balance lookup.
+3. Run `gofmt`, focused balance reconstruction tests, and `go test ./...`.
 4. Explain the resulting code and stop for review and commit.
