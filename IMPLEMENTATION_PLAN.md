@@ -137,6 +137,7 @@ Key defaults:
 
 ### Milestone 9 — Confirmed Balance Reconstruction
 
+- **Status:** ✅ Complete
 - **Goal:** Derive balances solely from confirmed blockchain history.
 - **What will be implemented:** Ordered transaction replay and per-account confirmed balance lookup.
 - **Blockchain / Go concepts being learned:** Event replay, derived state, map accumulation, transaction ordering, and error propagation.
@@ -145,6 +146,8 @@ Key defaults:
 - **Tests to add or run:** Reward credit, sender debit, receiver credit, multiple blocks, multiple transactions, unknown type, and negative sender balance.
 - **Completion criteria:** Synthetic valid chains reproduce the expected balances without a balances table.
 - **What I should be able to explain after completing the milestone:** Why blockchain history is authoritative and how replay rebuilds state after restart.
+- **Implementation notes:** Added `Blockchain.Balances()` and `Blockchain.Balance(name)` in `internal/blockchain/balance.go`. Replay walks block and transaction slices in order, credits rewards, and debits senders before crediting transfer receivers. Each call builds a fresh `map[string]int64`; no balances are persisted or cached. Names are matched exactly, and absent names read as zero without proving account existence. Empty chains return `ErrEmptyBlockchain`; Genesis alone produces an empty map. Replay errors identify the zero-based block and transaction positions and return no partial balances. Arithmetic safeguards reject nonpositive amounts, insufficient sender funds, and receiver overflow beyond `int64`, alongside unknown transaction types. Hash checks, account existence, reward policy, and other complete validation rules remain separate and deferred; no schema changes or new dependencies were needed.
+- **Verification:** `gofmt -w internal/blockchain/balance.go internal/blockchain/balance_test.go`, `go test ./internal/blockchain -run 'TestBalances' -count=1`, `go test ./...`, `go vet ./...`, and `git diff --check` passed. Full tests and vet required build-cache access beyond the sandbox. Tests cover Genesis and empty chains, the specification's Alice/Bob example, exact-name lookup, independent replay maps, multiple blocks and transactions, exact spending, transaction order, unknown types, nonpositive amounts, unfunded senders, overspending, first-error reporting, lookup error propagation, and reward/transfer arithmetic at the `int64` limit. Fixtures deliberately omit mining and complete reward validation to isolate replay behavior.
 
 ### Milestone 10 — Transfer and Available-Funds Validation
 
@@ -337,11 +340,11 @@ Important cross-dependencies:
 
 ## Recommended Next Implementation Task
 
-Implement **Milestone 9 — Confirmed Balance Reconstruction only**.
+Implement **Milestone 10 — Transfer and Available-Funds Validation only**.
 
 Before writing its code:
 
-1. Explain Milestone 9’s purpose, Go concepts, and expected file changes.
-2. Implement only ordered confirmed-transaction replay and per-account confirmed balance lookup.
-3. Run `gofmt`, focused balance reconstruction tests, and `go test ./...`.
+1. Explain Milestone 10’s purpose, Go concepts, and expected file changes.
+2. Implement only transfer validation using account names, confirmed balances, and existing pending outgoing transfers; pending incoming transfers are not spendable.
+3. Run `gofmt`, focused transfer validation tests, and `go test ./...`.
 4. Explain the resulting code and stop for review and commit.
