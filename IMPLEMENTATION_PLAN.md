@@ -179,6 +179,7 @@ Key defaults:
 
 ### Milestone 12 — Proof of Work with Context Cancellation
 
+- **Status:** ✅ Complete
 - **Goal:** Find a nonce whose block hash satisfies the leading-zero difficulty.
 - **What will be implemented:** Difficulty checking and `ProofOfWork(ctx, block)`, updating the candidate nonce and hash only on success.
 - **Blockchain / Go concepts being learned:** Brute-force Proof of Work, loops, mutable candidates, `context.Context`, cancellation, and cooperative concurrency.
@@ -187,6 +188,8 @@ Key defaults:
 - **Tests to add or run:** Low-difficulty success, stored hash/nonce consistency, leading-zero satisfaction, deterministic start behavior, invalid difficulty, and prompt cancellation at very high difficulty.
 - **Completion criteria:** Low-difficulty mining completes quickly and cancellation cannot return a successful candidate.
 - **What I should be able to explain after completing the milestone:** Why nonce changes alter the hash and how context cancellation safely stops CPU-bound work.
+- **Implementation notes:** Added `mining.ProofOfWork(ctx, block) (blockchain.Block, error)` in `internal/mining/pow.go`. The function checks the existing 1–64 difficulty bounds, searches sequentially from nonce zero using `Block.CalculateHash`, and returns the first hash with the required hexadecimal zero prefix. It operates on a block value, leaves the input unchanged, and returns a zero block on failure. Context errors are checked every iteration and again before returning a successful hash. A nonce-range exhaustion guard prevents unsigned wraparound. Transaction slices are read without copying or mutation; callers must not mutate them concurrently. This step performs only Proof of Work, with full block validation, reward creation, persistence, and CLI coordination remaining in their later milestones. No dependencies or architecture changes were needed.
+- **Verification:** `gofmt -w internal/mining/pow.go internal/mining/pow_test.go`, `go test ./internal/mining -count=1`, `go test ./...`, `go vet ./...`, `go test -race ./internal/mining -count=1`, and `git diff --check` passed. The initial sandboxed race build failed with `runtime/race: package testmain: cannot find package`; rerunning with access beyond the sandbox passed. Tests cover fixed first-winning nonces and hashes at difficulty 1 and 2, nonce-zero success, restarting from zero despite a supplied nonce, repeatability, unchanged block contents and input, invalid difficulty, pre-cancellation, and prompt deadline cancellation at maximum difficulty with no returned candidate.
 
 ### Milestone 13 — Complete Blockchain Validation
 
