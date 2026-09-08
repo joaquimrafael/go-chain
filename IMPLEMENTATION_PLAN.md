@@ -193,6 +193,7 @@ Key defaults:
 
 ### Milestone 13 — Complete Blockchain Validation
 
+- **Status:** ✅ Complete
 - **Goal:** Extend structural validation to all transaction, reward, account, and balance invariants.
 - **What will be implemented:** Complete `blockchain.Validate(chain, accountNames)`, composing structural checks with ordered economic replay.
 - **Blockchain / Go concepts being learned:** Stateful validation, protocol invariants, composition of checks, and precise diagnostic errors.
@@ -201,6 +202,8 @@ Key defaults:
 - **Tests to add or run:** Valid chain; modified transaction; invalid link/nonce/hash; missing, duplicate, misplaced, or wrong reward; unknown account/type; invalid amount; same-account transfer; and historical overspending.
 - **Completion criteria:** Validation reports the first invalid block and rule for every invariant in `SPEC.md`.
 - **What I should be able to explain after completing the milestone:** How structural validity differs from economic validity and why validation must replay transactions in order.
+- **Implementation notes:** Added `blockchain.Validate(chain, accountNames)`, checking structure and economic rules together in chain order. Extracted the existing per-block structural checks so an earlier economic failure takes precedence over a later structural failure; `ValidateStructure` retains its existing behavior. Non-Genesis blocks require a first-position reward, reject additional rewards, and enforce the empty sender, registered receiver, and fixed `transaction.RewardAmount` of 50 GOC. Transfers reuse `transaction.ValidateTransfer` without a pending pool, and each confirmed transaction updates local replay balances through the existing overflow-checked balance function. Replay uses funds confirmed up to the current transaction position; pending admission and future candidate construction still use their separate pre-mining funds rules. Inputs are unchanged, account names are matched exactly against the supplied registry, and errors identify the block and transaction position where applicable. No dependencies, persistence changes, or scope deviations were needed.
+- **Verification:** `gofmt -w internal/blockchain/validation.go internal/blockchain/validation_test.go internal/blockchain/validation_economic_test.go internal/transaction/transaction.go`, `go test ./internal/blockchain -run TestValidate -count=1`, `go test ./...`, `go vet ./...`, and `git diff --check` passed. The initial focused test was blocked by sandbox access to the Go build cache; rerunning with cache access passed, as did the full suite and vet. Existing structural corruption cases now exercise both validators. New tests cover empty and Genesis-only chains, reward-only blocks, ordered multi-block replay, unchanged inputs, missing/duplicate/misplaced rewards, reward sender and amount, missing accounts, unknown types, invalid transfers, cumulative and historical overspending, and first-error ordering across structural and economic rules. Economic fixtures are re-mined at difficulty 1 to isolate their rule failures from hash failures. Mining orchestration remains deferred to Milestone 14.
 
 ### Milestone 14 — Candidate Blocks, Rewards, and Pure Block Mining
 

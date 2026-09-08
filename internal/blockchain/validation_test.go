@@ -142,12 +142,15 @@ func TestValidateStructureCorruption(t *testing.T) {
 			if err == nil || !strings.Contains(err.Error(), tt.want) {
 				t.Fatalf("ValidateStructure() error = %v, want containing %q", err, tt.want)
 			}
+			if err := Validate(chain, map[string]struct{}{"alice": {}}); err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("Validate() error = %v, want containing %q", err, tt.want)
+			}
 		})
 	}
 }
 
 // structuralTestChain builds a deterministic fixture at difficulty 1. The bounded
-// nonce search is test setup; cancellable production mining comes in Milestone 12.
+// nonce search keeps blockchain tests independent of the mining package.
 func structuralTestChain(t *testing.T) Blockchain {
 	t.Helper()
 	chain := NewBlockchain(mustGenesis(t, 1))
