@@ -207,6 +207,7 @@ Key defaults:
 
 ### Milestone 14 — Candidate Blocks, Rewards, and Pure Block Mining
 
+- **Status:** ✅ Complete
 - **Goal:** Turn a validated chain and pending snapshot into one valid mined block without persistence.
 - **What will be implemented:** Candidate construction and `MineBlock(ctx, chain, pending, miner, accounts, timestamp)`.
 - **Blockchain / Go concepts being learned:** Mining orchestration, reward issuance, candidate state, ordered transactions, and pure core logic separated from I/O.
@@ -215,6 +216,8 @@ Key defaults:
 - **Tests to add or run:** Reward-only mining, mining with ordered transfers, reward amount/order, unknown miner, invalid pending transfer, fixed difficulty, valid resulting chain, and cancellation.
 - **Completion criteria:** The function returns a fully valid block or an error and never touches SQLite.
 - **What I should be able to explain after completing the milestone:** Every step from pending snapshot to a valid mined block and why the reward is not pending.
+- **Implementation notes:** Added `mining.MineBlock(ctx, chain, pending, miner, accounts, timestamp)` in `internal/mining/mine.go`. It validates the existing chain and exact miner name, replays confirmed balances, and revalidates each pending transfer against the earlier pending prefix. This reserves cumulative outgoing spending without crediting pending incoming transfers or the new reward. The candidate owns a fresh transaction slice containing the 50 GOC reward first and all pending transfers in snapshot order; its height, previous hash, and fixed difficulty follow the validated tip. After Proof of Work, complete validation checks a separately allocated appended chain before the block is returned. Errors, including cancellation, return a zero block and preserve context error identity. Inputs remain unchanged. Repeated replay and prefix validation favor reuse and clarity for the small educational dataset over performance. No dependencies or architecture changes were needed; SQLite confirmation and CLI wiring remain deferred.
+- **Verification:** `gofmt -w internal/mining/mine.go internal/mining/mine_test.go`, `go test ./internal/mining -run TestMineBlock -count=1`, `go test ./...`, `go vet ./...`, and `git diff --check` passed. The initial full-suite attempt was blocked by sandbox access to the Go build cache; the full suite and vet passed when rerun with cache access. Tests cover reward-only mining, deterministic results, fixed difficulty and tip linkage, ordered transfers and exact spending, resulting chain validation and balances, unchanged input and backing-array ownership, empty/corrupted history, unknown miner, invalid pending fields and types, cumulative overspending, unspendable rewards and pending incoming funds, pre-cancellation, and deadline cancellation during high-difficulty mining.
 
 ### Milestone 15 — Atomic Persistence of Mined Blocks
 
