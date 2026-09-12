@@ -221,6 +221,7 @@ Key defaults:
 
 ### Milestone 15 — Atomic Persistence of Mined Blocks
 
+- **Status:** ✅ Complete
 - **Goal:** Confirm a mined block and remove exactly its included pending rows as one database operation.
 - **What will be implemented:** `Store.ConfirmMinedBlock(ctx, block, includedPendingIDs)`.
 - **Blockchain / Go concepts being learned:** ACID transactions, optimistic tip checks, commit/rollback, affected-row validation, and the distinction between blockchain transactions and SQL transactions.
@@ -229,6 +230,8 @@ Key defaults:
 - **Tests to add or run:** Successful confirmation and reload; included rows removed; unincluded rows retained; reward-only block; stale-tip rejection; missing pending ID forces rollback; failed confirmation leaves block and pending state unchanged.
 - **Completion criteria:** No observable state can contain half of a mining confirmation.
 - **What I should be able to explain after completing the milestone:** Why SQL atomicity is required even though the blockchain itself also contains objects called transactions.
+- **Implementation notes:** Added `Store.ConfirmMinedBlock(ctx, block, includedPendingIDs)` in `internal/storage/confirmation.go`. One SQL transaction checks initialization and the current tip height/hash, inserts the block and transactions with explicit positions, deletes included pending rows, checks each deletion affected exactly one row, and commits. Deferred rollback protects every failure path. IDs correspond in order to transfers after the reward; count/type checks and deletion predicates matching ID, sender, receiver, and amount prevent unrelated or changed pending rows from being removed. Repeated or missing IDs fail and roll back earlier writes. Newer unincluded rows remain pending. Full chain and economic validation remain the caller's responsibility through `mining.MineBlock`; no SQL transaction is held during Proof of Work. No dependencies or schema changes were needed. CLI integration remains deferred to later milestones.
+- **Verification:** `gofmt -w internal/storage/confirmation.go internal/storage/confirmation_test.go`, `go test ./internal/storage -run TestConfirmMinedBlock -count=1`, `go test ./...`, `go vet ./...`, and `git diff --check` passed. The initial full-suite run was blocked by sandbox access to the Go build cache; rerunning the full suite and vet with cache access passed. Tests cover reward-only confirmation, ordered transfer persistence and validation after reopen, derived balances, preservation of newer pending rows (including identical transfer contents), stale snapshots after another connection advances the tip, missing/duplicate/mismatched IDs, forced block/transaction/deletion failures, rollback of partial writes and deletions across reopen, pre-cancellation, invalid argument shape, and uninitialized databases. Direct row-count assertions also check that failed confirmation leaves no orphan confirmed transactions.
 
 ### Milestone 16 — CLI Initialization, Account Creation, and Balance
 
